@@ -1085,6 +1085,40 @@ describe('WrapType mutation transform', () => {
   });
 });
 
+describe('multiple WrapType transforms', () => {
+  test('should work', async () => {
+    const typeDefGen = (i: any) => `
+      type Query {
+        test: Test${i}Response
+      }
+
+      type Test${i}Response {
+        a: String!
+      }
+      `;
+
+    const resolverGen = (i: number) => ({
+      Query: {
+        test: () => ({
+          a: `test${i}Result`
+        })
+      }
+    })
+
+    const subschemaGen = (i: number) => ({
+      schema: makeExecutableSchema({
+        typeDefs: typeDefGen(i),
+        resolvers: resolverGen(i)
+      }),
+      transforms: [new WrapType(`Query`, `test${i}_Query`, `test${i}`)]
+    });
+
+    const stitchedSchema = stitchSchemas({
+      subschemas: [subschemaGen(1), subschemaGen(2)],
+    });
+  });
+});
+
 describe('schema transformation with extraction of nested fields', () => {
   test('should work via ExtendSchema transform', async () => {
     const transformedPropertySchema = wrapSchema(propertySchema, [
